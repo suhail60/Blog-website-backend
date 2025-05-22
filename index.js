@@ -25,18 +25,27 @@ app.use(express.static(path.join(__dirname, "public")));
 // Import routes
 const mainRoutes = require("./routes/websiteRoutes/routes");
 const Blog = require("./routes/blog/blogRoutes");
+const { stat } = require("fs");
 app.use("/uploads", express.static("uploads"));
 
 app.use("/api", mainRoutes);
 app.use("/api/blog", Blog);
 app.use("/api/auth",authRoutes)
+app.get("/", (req, res) => {
+  res.send({
+    message: "Welcome to the Blog Website",
+    status: "success",
+  });
+});
+
 const PORT = process.env.PORT || 5000;
+console.log(PORT)
 const HOST = process.env.HOST || "localhost";
 // Connect to DB, then start server
 dbConnect()
   .then(() => {
     app.listen(PORT,HOST, () => {
-      console.log(`Server running on http://${process.env.HOST}:5000`);
+      console.log(`Server running on http://${process.env.HOST}:${process.env.PORT}`);
     });
   })
   .catch((err) => {
