@@ -15,9 +15,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors())
 
 // View engine setup
-app.set("view engine", "hbs");
-app.set("views", path.join(__dirname, "views"));
-hbs.registerPartials(path.join(__dirname, "views", "partials"));
+
+
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -25,7 +24,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // Import routes
 const mainRoutes = require("./routes/websiteRoutes/routes");
 const Blog = require("./routes/blog/blogRoutes");
-const { stat } = require("fs");
+
 app.use("/uploads", express.static("uploads"));
 
 app.use("/api", mainRoutes);
