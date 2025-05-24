@@ -43,8 +43,8 @@ const HOST = process.env.HOST || "localhost";
 // Connect to DB, then start server
 dbConnect()
   .then(() => {
-    app.listen(PORT,HOST, () => {
-      console.log(`Server running on http://${process.env.HOST}:${process.env.PORT}`);
+    app.listen(PORT,"0.0.0.0", () => {
+      console.log(`Server running on http://"0.0.0.0":${process.env.PORT}`);
     });
   })
   .catch((err) => {
