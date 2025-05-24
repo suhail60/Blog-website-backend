@@ -7,10 +7,10 @@ const {create,getData,SingleBlogByMongoId,myBlogs,updateBlog,deleteBlog} = requi
 const verifyLogin = require("../../middleware/authverify")
 
 router.get("/read",getData)
-router.post('/create', verifyLogin, upload.single("pic"), create)
+router.post('/create', verifyLogin, upload.single("pic") , create)
 router.get("/read/:id",SingleBlogByMongoId)
 router.get("/myBlogs",verifyLogin,myBlogs);
-router.put("/update/:id", verifyLogin,upload.single("pic"), updateBlog);
+router.put("/update/:id", verifyLogin, upload.single("pic") , updateBlog);
 router.delete("/delete/:id", verifyLogin, deleteBlog);
 
 module.exports = router;

@@ -1,3 +1,4 @@
+const path = require("path")
 const Blog = require("../model/blogModel"); // Note: use Blog (capitalized) to match model naming
 const fs = require("fs")
 const mongoose = require("mongoose");
@@ -262,6 +263,93 @@ const myBlogs = async (req, res) => {
 //   }
 // };
 
+// async function updateBlog(req, res) {
+//   try {
+//     const blogId = req.params.id;
+
+//     if (!mongoose.Types.ObjectId.isValid(blogId)) {
+//       return res.status(400).json({ error: "Invalid MongoDB ID" });
+//     }
+
+//     // Find the existing blog first to get the current image path
+//     const existingBlog = await Blog.findOne({ _id: blogId, createdBy: req.user.userId });
+    
+//     if (!existingBlog) {
+//       return res.status(404).json({ error: "Blog not found or unauthorized" });
+//     }
+
+//     // Extract updatable fields
+//     const { title, topic, category, description, content, hashtag } = req.body;
+
+//     let hashtagsArray;
+
+//     // Handle hashtag - if it's a string, parse it, else accept as is
+//     if (typeof hashtag === 'string') {
+//       try {
+//         hashtagsArray = JSON.parse(hashtag);
+//         if (!Array.isArray(hashtagsArray)) {
+//           return res.status(400).json({ error: "Invalid hashtag format. Must be an array." });
+//         }
+//       } catch {
+//         return res.status(400).json({ error: "Invalid hashtag format. Must be JSON stringified array." });
+//       }
+//     } else if (Array.isArray(hashtag)) {
+//       hashtagsArray = hashtag;
+//     } else if (hashtag === undefined) {
+//       hashtagsArray = undefined; // no update on hashtags
+//     } else {
+//       return res.status(400).json({ error: "Hashtag must be an array or JSON stringified array." });
+//     }
+
+//     const updateData = {
+//       title,
+//       topic,
+//       category,
+//       description,
+//       content,
+//       updatedAt: new Date()
+//     };
+
+//     if (hashtagsArray !== undefined) {
+//       updateData.hashtag = hashtagsArray;
+//     }
+
+//     // Handle image update
+    
+//       // Set new image path
+//       updateData.pic = req.file ? `/uploads/${req.file.filename}`:null;
+      
+//       // Delete old image if it exists
+//       if (existingBlog.pic) {
+//         const oldImagePath = path.join(__dirname, '..', 'public', existingBlog.pic);
+//         fs.unlink(oldImagePath, (err) => {
+//           if (err) console.error('Error deleting old image:', err);
+//         });
+//       }
+  
+
+//     const updatedBlog = await Blog.findOneAndUpdate(
+//       { _id: blogId, createdBy: req.user.userId },
+//       updateData,
+//       { new: true, runValidators: true }
+//     );
+
+//     res.status(200).json({ 
+//       message: "Blog updated successfully", 
+//       blog: updatedBlog 
+//     });
+
+//   } catch (err) {
+//     console.error("Update blog error:", err);
+  
+
+//     res.status(500).json({ 
+//       error: "Failed to update blog",
+//       details: process.env.NODE_ENV === 'development' ? err.message : undefined
+//     });
+//   }
+// }
+
 async function updateBlog(req, res) {
   try {
     const blogId = req.params.id;
@@ -270,53 +358,16 @@ async function updateBlog(req, res) {
       return res.status(400).json({ error: "Invalid MongoDB ID" });
     }
 
-    // Find the existing blog first to get the current image path
     const existingBlog = await Blog.findOne({ _id: blogId, createdBy: req.user.userId });
     
     if (!existingBlog) {
       return res.status(404).json({ error: "Blog not found or unauthorized" });
     }
 
-    // Extract updatable fields
-    const { title, topic, category, description, content, hashtag } = req.body;
-
-    let hashtagsArray;
-
-    // Handle hashtag - if it's a string, parse it, else accept as is
-    if (typeof hashtag === 'string') {
-      try {
-        hashtagsArray = JSON.parse(hashtag);
-        if (!Array.isArray(hashtagsArray)) {
-          return res.status(400).json({ error: "Invalid hashtag format. Must be an array." });
-        }
-      } catch {
-        return res.status(400).json({ error: "Invalid hashtag format. Must be JSON stringified array." });
-      }
-    } else if (Array.isArray(hashtag)) {
-      hashtagsArray = hashtag;
-    } else if (hashtag === undefined) {
-      hashtagsArray = undefined; // no update on hashtags
-    } else {
-      return res.status(400).json({ error: "Hashtag must be an array or JSON stringified array." });
-    }
-
-    const updateData = {
-      title,
-      topic,
-      category,
-      description,
-      content,
-      updatedAt: new Date()
-    };
-
-    if (hashtagsArray !== undefined) {
-      updateData.hashtag = hashtagsArray;
-    }
-
-    // Handle image update
+    // Handle file upload
+    let newImagePath;
     if (req.file) {
-      // Set new image path
-      updateData.pic = `/uploads/blogs/${req.file.filename}`;
+      newImagePath = `/uploads/${req.file.filename}`;
       
       // Delete old image if it exists
       if (existingBlog.pic) {
@@ -327,35 +378,54 @@ async function updateBlog(req, res) {
       }
     }
 
+    // Prepare update data
+    const updateData = {
+      title: req.body.title,
+      topic: req.body.topic,
+      category: req.body.category,
+      description: req.body.description,
+      content: req.body.content,
+      updatedAt: new Date()
+    };
+    console.log('Uploaded file:', {
+  originalname: req.file?.originalname,
+  mimetype: req.file?.mimetype,
+  size: req.file?.size
+});
+
+    // Add new image path if uploaded
+    if (req.file) {
+      updateData.pic = newImagePath;
+    }
+
+    // Handle hashtag
+    if (req.body.hashtag) {
+      try {
+        updateData.hashtag = JSON.parse(req.body.hashtag);
+      } catch {
+        return res.status(400).json({ error: "Invalid hashtag format" });
+      }
+    }
+
     const updatedBlog = await Blog.findOneAndUpdate(
       { _id: blogId, createdBy: req.user.userId },
       updateData,
       { new: true, runValidators: true }
     );
 
-    res.status(200).json({ 
+    return res.status(200).json({ 
       message: "Blog updated successfully", 
       blog: updatedBlog 
     });
 
   } catch (err) {
     console.error("Update blog error:", err);
-    
-    // Delete the newly uploaded file if error occurred after upload
-    if (req.file) {
-      const newImagePath = path.join(__dirname, '..', 'public', 'uploads', 'blogs', req.file.filename);
-      fs.unlink(newImagePath, (err) => {
-        if (err) console.error('Error cleaning up new image:', err);
-      });
-    }
-
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: "Failed to update blog",
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      ...(process.env.NODE_ENV === 'development' && { details: err.message })
     });
   }
 }
-
 
 async function deleteBlog(req, res) {
   try {
